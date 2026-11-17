@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ถอดรหัสเลข</title>
+<meta name="description" content="ดูความหมายเบอร์โทรตามเลขศาสตร์ไทย หรือสุ่มเลขเสี่ยงทาย">
+<meta name="theme-color" content="#eef0f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#13162a" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ถอดรหัสเลข">
+<meta property="og:description" content="ดูความหมายเบอร์โทรตามเลขศาสตร์ไทย หรือสุ่มเลขเสี่ยงทาย">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%233d4a8a'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='34' font-weight='700' fill='%23dcb96f' text-anchor='middle'%3E9%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Trirong:wght@500;600;700&family=Sarabun:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Theme: twilight indigo with muted gold, a quiet night sky for fortune reading.
+   Layout: one column; two tabs (phone-number reading first, random draw second); the 100-number board folds away. */
+:root {
+  --bg: #eef0f6;
+  --surface: #fafbfe;
+  --line: #d9dce9;
+  --ink: #232846;
+  --muted: #5f6584;
+  --accent: #3d4a8a;
+  --accent-ink: #ffffff;
+  --accent-soft: #e4e7f4;
+  --drawn: #d3d8ee;
+  --gold: #9a7632;        /* large numerals only (3:1 is enough at that size) */
+  --gold-text: #6f521b;   /* small gold text, passes 4.5:1 on --gold-soft */
+  --gold-soft: #f4eddc;
+  --gold-line: #e3d4ae;
+  --glow: rgba(176, 140, 70, 0.16);
+  --star: rgba(61, 74, 138, 0.10);
+  --font-display: "Trirong", "Sarabun", Georgia, serif;
+  --font-body: "Sarabun", "Noto Sans Thai", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #13162a; --surface: #1b1f37; --line: #2e3354; --ink: #e7e9f4;
+    --muted: #a3a8c6; --accent: #a3adea; --accent-ink: #13162a;
+    --accent-soft: #252a49; --drawn: #343b66; --gold: #dcb96f; --gold-text: #e4c682;
+    --gold-soft: #2a2620; --gold-line: #4a4130;
+    --glow: rgba(220, 185, 111, 0.13); --star: rgba(231, 233, 244, 0.10); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #13162a; --surface: #1b1f37; --line: #2e3354; --ink: #e7e9f4;
+  --muted: #a3a8c6; --accent: #a3adea; --accent-ink: #13162a;
+  --accent-soft: #252a49; --drawn: #343b66; --gold: #dcb96f; --gold-text: #e4c682;
+  --gold-soft: #2a2620; --gold-line: #4a4130;
+  --glow: rgba(220, 185, 111, 0.13); --star: rgba(231, 233, 244, 0.10); color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.65;
+}
+.wrap {
+  max-width: 600px;
+  margin: 0 auto;
+  padding-block: 36px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 24px;
+}
+header.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.title-block { display: grid; gap: 2px; min-width: 0; }
+.theme-btn { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; margin-top: 6px; }
+.theme-btn svg { width: 18px; height: 18px; }
+body { transition: background-color 250ms, color 250ms; }
+@media (prefers-reduced-motion: reduce) { body { transition: none; } }
+h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2rem;
+  line-height: 1.3;
+  margin: 0;
+  text-wrap: balance;
+}
+.sub { margin: 0; color: var(--muted); }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; margin: 0; }
+.label { font-size: 0.82rem; font-weight: 600; letter-spacing: 0.04em; color: var(--muted); margin: 0; }
+.meta { font-family: var(--font-mono); font-size: 0.82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Tabs */
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.tab {
+  font: inherit;
+  font-weight: 600;
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 12px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel { display: grid; gap: 20px; }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 20px;
+  display: grid;
+  gap: 14px;
+}
+
+/* Buttons */
+button { font: inherit; }
+.btn {
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 10px 22px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  transition: border-color 150ms, filter 150ms;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); padding: 12px 36px; font-size: 1.05rem; }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.small { padding: 5px 16px; font-size: 0.9rem; font-weight: 500; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.copy-status { font-size: 0.85rem; color: var(--muted); }
+
+/* Phone input */
+.field { display: grid; gap: 6px; }
+.field input {
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  letter-spacing: 0.05em;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+}
+.field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }
+.sum-line {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.sum-expr { letter-spacing: 0.02em; }
+.sum-total { white-space: nowrap; color: var(--ink); font-weight: 500; }
+.note { margin: 0; font-size: 0.85rem; color: var(--muted); }
+
+/* Meaning card (shared by both tabs) */
+.meaning {
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-line);
+  border-radius: 18px;
+  padding: 18px 20px;
+  display: grid;
+  gap: 10px;
+}
+.meaning-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; }
+.meaning-num.long { font-size: 2.2rem; }
+.meaning-num {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 3rem;
+  line-height: 1.1;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  min-width: 2ch;
+}
+.meaning-head .label { color: var(--gold-text); }
+.facts { margin: 0; font-size: 0.88rem; color: var(--muted); }
+.meaning-text { margin: 0; font-size: 1.1rem; line-height: 1.75; min-width: 0; }
+.meaning-empty { margin: 0; color: var(--muted); }
+
+/* Draw stage */
+.stage {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 28px 20px 24px;
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 38%, var(--glow), transparent 55%),
+    radial-gradient(circle, var(--star) 1px, transparent 1.5px) 0 0 / 22px 22px,
+    var(--surface);
+}
+.number {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(5rem, 22vw, 8.5rem);
+  line-height: 1.05;
+  padding-top: 0.08em;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.number.long { font-size: clamp(3.2rem, 15vw, 6rem); padding-block: 0.2em 0.1em; }
+.number.rolling { color: var(--muted); }
+.range { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; }
+.range label { color: var(--muted); font-size: 0.95rem; }
+.range input {
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  width: 5.75rem;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.range input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }
+.range input[aria-invalid="true"] { border-color: #b4483c; }
+.range-msg { margin: 0; font-size: 0.88rem; color: var(--muted); }
+.number.pop { animation: pop 380ms ease-out; }
+@keyframes pop { 0% { transform: scale(0.9); opacity: .4; } 100% { transform: scale(1); opacity: 1; } }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.option { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.95rem; cursor: pointer; }
+.option input { accent-color: var(--accent); width: 18px; height: 18px; }
+.hint { font-size: 0.85rem; color: var(--muted); margin: 0; }
+kbd { font-family: var(--font-mono); font-size: 0.78rem; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+@media (hover: none) { .hint { display: none; } }
+
+/* History */
+.sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.history { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+.chip:first-child { background: var(--accent); color: var(--accent-ink); }
+
+/* Board, folded */
+details.board-wrap { border-top: 1px solid var(--line); padding-top: 14px; }
+details.board-wrap summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent);
+  list-style-position: inside;
+}
+details.board-wrap summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+.board-body { display: grid; gap: 10px; margin-top: 14px; }
+.board {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  max-width: 440px;
+}
+.cell {
+  aspect-ratio: 1;
+  max-width: 100%;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: clamp(0.62rem, 2.4vw, 0.8rem);
+  color: var(--muted);
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.cell:hover { border-color: var(--accent); }
+.cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cell.drawn { background: var(--drawn); color: var(--ink); border-color: transparent; }
+.cell.latest { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.cell.viewing { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+footer { display: grid; gap: 6px; font-size: 0.82rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
+footer p { margin: 0; }
+footer a { color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .number.pop { animation: none; }
+  .btn { transition: none; }
+}
+</style>
+<script>
+  // Apply the saved day/night choice before the page paints
+  try { const t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
+</script>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <div class="title-block">
+      <h1>ถอดรหัสเลข</h1>
+      <p class="sub">ดูความหมายเบอร์โทรตามเลขศาสตร์ไทย หรือสุ่มเลขเสี่ยงทาย</p>
+    </div>
+    <button class="btn small theme-btn" id="theme-btn" type="button">
+      <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+      <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" hidden><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <span id="theme-text">กลางคืน</span>
+    </button>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="เลือกโหมด">
+    <button class="tab" role="tab" id="tab-phone" aria-controls="phone" aria-selected="true" type="button">ดูเบอร์โทร</button>
+    <button class="tab" role="tab" id="tab-draw" aria-controls="draw" aria-selected="false" type="button" tabindex="-1">สุ่มเลข</button>
+  </div>
+
+  <!-- Phone tab -->
+  <section class="panel" id="phone" role="tabpanel" aria-labelledby="tab-phone">
+    <div class="card">
+      <form class="field" id="phone-form" autocomplete="off">
+        <label class="label" for="phone-input">เบอร์โทรศัพท์</label>
+        <input id="phone-input" type="tel" inputmode="numeric" maxlength="20" value="081-234-5678" placeholder="เช่น 081-234-5678">
+      </form>
+      <p class="note" id="phone-example">เบอร์นี้เป็นตัวอย่างสมมติ พิมพ์เบอร์ที่อยากดูแทนได้เลย</p>
+      <p class="sum-line" id="phone-sum"></p>
+      <p class="note" id="phone-msg" hidden></p>
+    </div>
+
+    <div class="meaning" id="phone-meaning" aria-live="polite">
+      <div class="meaning-head">
+        <span class="meaning-num" id="phone-n"></span>
+        <div>
+          <p class="label">ผลรวมเบอร์ · เลขศาสตร์ไทย</p>
+          <p class="facts" id="phone-facts"></p>
+        </div>
+      </div>
+      <p class="meaning-text" id="phone-text"></p>
+      <div class="row-actions">
+        <button class="btn small" id="phone-copy" type="button">คัดลอกผล</button>
+        <span class="copy-status" id="phone-copy-status" aria-live="polite"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Draw tab -->
+  <section class="panel" id="draw" role="tabpanel" aria-labelledby="tab-draw" hidden>
+    <div class="stage">
+      <div class="range" role="group" aria-label="ช่วงตัวเลขที่จะสุ่ม">
+        <label for="range-min">สุ่มตั้งแต่</label>
+        <input id="range-min" type="number" inputmode="numeric" min="0" max="999999" step="1" value="1">
+        <label for="range-max">ถึง</label>
+        <input id="range-max" type="number" inputmode="numeric" min="0" max="999999" step="1" value="100">
+      </div>
+      <p class="range-msg" id="range-msg" hidden></p>
+      <p class="label" id="stage-label">พร้อมสุ่ม</p>
+      <div class="number" id="number" aria-live="polite" aria-atomic="true">?</div>
+      <div class="actions">
+        <button class="btn primary" id="draw-btn" type="button">สุ่มเลข</button>
+        <button class="btn" id="reset-btn" type="button">เริ่มใหม่</button>
+      </div>
+      <label class="option" for="no-repeat">
+        <input type="checkbox" id="no-repeat">
+        ไม่สุ่มเลขที่ออกแล้ว
+      </label>
+      <p class="hint">กด <kbd>Space</kbd> หรือ <kbd>Enter</kbd> เพื่อสุ่มได้เช่นกัน</p>
+    </div>
+
+    <div class="meaning" id="draw-meaning" aria-live="polite">
+      <div class="meaning-head" id="draw-head" hidden>
+        <span class="meaning-num" id="draw-n"></span>
+        <div>
+          <p class="label" id="draw-label">เลขที่สุ่มได้ · เลขศาสตร์ไทย</p>
+          <p class="facts" id="draw-facts"></p>
+        </div>
+      </div>
+      <p class="meaning-text" id="draw-text" hidden></p>
+      <p class="meaning-empty" id="draw-empty">กดสุ่มเลข หรือเลือกเลขจากกระดานด้านล่าง ความหมายจะแสดงตรงนี้</p>
+      <div class="row-actions" id="draw-actions" hidden>
+        <button class="btn small" id="draw-copy" type="button">คัดลอกความหมาย</button>
+        <span class="copy-status" id="draw-copy-status" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-head">
+        <h2>ประวัติการสุ่ม</h2>
+        <span class="meta" id="hist-meta">0 ครั้ง</span>
+      </div>
+      <div class="history" id="history"><span class="note">ยังไม่มีการสุ่ม</span></div>
+
+      <details class="board-wrap" id="board-wrap">
+        <summary>ดูความหมายทั้ง 100 เลข</summary>
+        <div class="board-body">
+          <div class="sec-head">
+            <p class="note">แตะเลขเพื่อดูความหมาย ช่องสีครามคือเลขที่สุ่มออกแล้ว</p>
+            <span class="meta" id="board-meta">ออกแล้ว 0 / 100</span>
+          </div>
+          <div class="board" id="board"></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <footer>
+    <p>ความหมายเลขศาสตร์คัดลอกจากบทความ <a href="https://www.thairath.co.th/horoscope/belief/2835688" target="_blank" rel="noopener">ความหมายเลขมงคล 1–100 (ไทยรัฐ)</a> ตำราแต่ละสำนักอาจให้ความหมายต่างกัน</p>
+    <p>เลขศาสตร์เป็นความเชื่อ ไม่มีหลักฐานว่าตัวเลขส่งผลต่อโชคหรือชีวิตจริง ใช้เป็นแนวทางประกอบการตัดสินใจเท่านั้น</p>
+    <p>การสุ่มเลขใช้ตัวสุ่มของเบราว์เซอร์แบบเดียวกับงานด้านความปลอดภัย ทุกเลขในช่วงที่ตั้งไว้มีโอกาสออกเท่ากัน</p>
+  </footer>
+</main>
+
+<script>
+(() => {
+  const MIN = 1, MAX = 100, SPAN = MAX - MIN + 1;
+  const $ = (id) => document.getElementById(id);
+  const NUMEROLOGY = {
+    "1": "ใจกล้ามีความเป็นตัวเองสูง ชอบเรื่องของการผจญภัย ชีวิตจะพบกับความสมหวัง ทำอะไรจะประสบความสำเร็จด้วยตนเองไม่ต้องมีคนช่วยเหลือ",
+    "2": "ยอมรับฟังความคิดเห็นผู้อื่น มีสัมพันธ์ที่ดีต่อคนรอบข้าง แต่แคร์คนอื่นมากเกินไปจนบางครั้งทำให้ตัวเองเกิดความกังวลในตัวเองสูง",
+    "3": "หุนหันพลันแล่นกับเรื่องที่ไม่ควรจะเกิด ชอบในเรื่องการให้ความถูกต้องกับตัวเอง ไม่ยอมใครถ้าโดนเอารัดเอาเปรียบ",
+    "4": "การรู้จักใครใหม่ๆ จะค่อนข้างเหนื่อย เพราะเป็นคนที่ชอบอยู่คนเดียว ความคิดอ่านเหนือชั้นกว่าผู้อื่น ไม่มีใครเอารัดเอาเปรียบได้",
+    "5": "เก่งปราชญ์ในเรื่องของการใช้ปัญญาแก้ไขปัญหาในเรื่องต่างๆ คิดอยากศึกษาอะไรมีไหวพริบมากกว่าเพื่อน",
+    "6": "เสน่ห์มีต่อคนรอบข้างเสมอ ชอบเรื่องของความรักสวยรักงาม มักจะเลือกทำอะไรให้ตัวเองสบายเอาไว้ก่อน",
+    "7": "เอาตัวเองเป็นที่ตั้งเอาไว้ก่อนไม่ว่าเรื่องอะไรก็ตามแต่ ด้านดีคือเป็นคนทำงานรอบคอบ ตรวจทานไม่ให้เกิดความผิดพลาด",
+    "8": "เป็นคนที่มีน้ำใจกับคนรอบข้างสูง แต่ชอบยุ่งเกี่ยวกับเรื่องสีเทา อบายมุขต่างๆ หลงติดได้ง่าย",
+    "9": "ชีวิตประสบความสำเร็จได้ดี มีความก้าวหน้าในหน้าที่การงาน แต่จะมีสัมผัสเกี่ยวข้องกับสิ่งที่มองไม่เห็น",
+    "10": "ชอบท้าทายอะไรสิ่งใหม่ๆ โดยที่มั่นใจในตัวเอง ไม่ชอบอยู่ภายใต้ความกดดันหรือคำสั่งใคร",
+    "11": "อุปนิสัยชอบเป็นคนแข็งนอกอ่อนใน การคิดอะไรแล้วหลงเชื่อยากที่จะถอนความคิดนั้นออกมาได้",
+    "12": "ชอบเอาชนะในทุกเรื่องเกลียดความพ่ายแพ้ รักใครจะมั่นคงไม่เปลี่ยนแปลงไปจากเดิมง่ายๆ",
+    "13": "ติดปัญหาเรื่องของความรัก คบใครไม่ค่อยประสบความสมหวัง โชคลาภเจอไม่ยากแต่ก็ต้องแลกกับความสุขตัวเอง",
+    "14": "ก้าวหน้าในหน้าที่การงานกว่าผู้อื่นแม้ขยันหรือไม่ก็ตาม การมีปฏิสัมพันธ์ที่ดีกับต่างชาติต่างภาษาจะรุ่ง",
+    "15": "หากต้องเรียนรู้อะไรสักเรื่องจะมีไหวพริบที่ดีกว่าใคร การได้รับความช่วยเหลือจากคนรอบข้างได้รับเสมอเมื่อต้องการ",
+    "16": "พบเจออุปสรรคในการใช้ชีวิตมากจากศัตรูรอบตัว การแพ้ภัยจะเกิดจากการใจอ่อนของตัวเอง",
+    "17": "ถูกกดดันจากคนรอบข้างสูง ผู้หลักผู้ใหญ่มักมองข้ามไม่ให้ความสำคัญกับตัวคุณเลย",
+    "18": "ไม่เหมาะสมกับการทำงานนั่งโต๊ะ การเปลี่ยนแปลงในชีวิตมักเกิดขึ้นโดยไม่พร้อมตั้งตัว",
+    "19": "จะได้รับการยอมรับในคนหมู่มาก หน้าที่การงานจะถูกส่งเสริมจากผู้หลักผู้ใหญ่",
+    "20": "มีความคิดในการออกแบบผลงานการทำงานได้ดี การร่วมทีมกับผู้อื่นจะมีแต่คนนับหน้าถือตา",
+    "21": "แม้ว่าคุณจะมีความเปราะบางแค่ไหน แต่เมื่อต้องตัดสินใจอะไรบางอย่างก็เด็ดขาดกว่าใครเพื่อน",
+    "22": "มักจะมีความอ่อนแอเมื่อกระทบต่อเรื่องใดๆ ก็ตาม การถูกเอาใจเกิดขึ้นเสมอ ร่วมงานกับใครไม่ประสบความสำเร็จ",
+    "23": "คนรอบตัวมักหลงชอบในความเป็นตัวคุณเอง ทำอะไรมีแต่สำเร็จโดยการช่วยเหลือจากคนรอบข้าง",
+    "24": "จัดเรียงความคิดได้ดีเมื่อสื่อสารกับผู้อื่น จะมีชื่อเสียงในแวดวงสังคมที่ค่อนข้างเข้าถึงได้ยาก",
+    "25": "หากอยากมีฐานะที่ดีเหมือนกับคนรอบตัว ต้องใช้ความสามารถตัวเองหนักหนาแต่ก็จะได้มันมา",
+    "26": "น่าคบหาสำหรับในสายตาผู้อื่น เงินทองหาได้ง่ายจะได้ทรัพย์มาจากเพศตรงข้ามส่งเสริมเป็นหลัก",
+    "27": "เป็นนักจัดการชีวิตตนเองได้ดี แต่ด้วยความจริงจังมากเกินไป จะเกิดความกดดันตัวเองสูงกว่าใครเพื่อน",
+    "28": "ทุกอย่างจะดีหมดแล้ว เหลือแต่เพียงการจัดการชีวิตตนเองให้เป็นขั้นตอนแล้วทุกอย่างจะดี",
+    "29": "มักจะเชื่อเรื่องของศาสตร์ลี้ลับ ทำงานเก่งแต่ด้วยความใจอ่อนต่อคนรอบข้างจะมีผลกระทบต่องาน",
+    "30": "เกิดเรื่องของอุบัติเหตุมากกว่าใครเพื่อน การเปลี่ยนแปลงในชีวิตมักจะเกิดโดยกะทันหัน",
+    "31": "ความยากลำบากจะมากโขในการเริ่มทำอะไรสักอย่าง ต้องฝ่าฟันมากแต่ก็สำเร็จไปได้ด้วยดี",
+    "32": "ชอบในการศึกษาเพิ่มเติมอะไรใหม่ๆ เพิ่ม เกิดผลดีเพราะทำให้ชีวิตเกิดความรุ่งเรืองตามมา",
+    "33": "อารมณ์ไม่คงที่มักเกิดความโมโห โกรธในเรื่องไม่เป็นเรื่อง การลดความโกรธ ทิฐิค่อนข้างยาก",
+    "34": "สติสัมปชัญญะเป็นที่หนึ่ง เรียกว่าไม่ว่าหยิบอะไรก็ดีที่สุด แต่ด้วยภัยความมั่นยากจะมีเพื่อนฝูงจริงใจ",
+    "35": "ตกลงปลงใจคบหาใครก็ตาม จะพบเจอเนื้อคู่ที่ดีส่งเสริมทั้งเรื่องการงาน ความรัก เงินทอง",
+    "36": "เด่นเรื่องความรักพบแต่ความจริงใจ การนำเลขร่วมกิจการจะเกิดความรุ่งเรืองในผลประกอบการธุรกิจ",
+    "37": "จะมีแต่พบเจอการจากลา ไม่สมหวังกับทุกเรื่อง หลีกเลี่ยงเลขนี้ได้ก็ทำเสียจะดีกว่าสูญเสีย",
+    "38": "มีความเกี่ยวข้องกับกลุ่มคนหาเรื่อง อันธพาลกับผู้อื่น ติดสอยห้อยตามในเรื่องไม่สู้ดีกับคุณสักเท่าไรนัก",
+    "39": "เหมาะสมกับคนที่ชอบการลุยทำอะไรสักอย่าง แต่ด้วยวิสัยทัศน์ของคุณมองเห็นแต่ความคิดตัวเองเป็นหลัก จะเกิดการผิดพลาดทุกการกระทำได้",
+    "40": "เหมาะกับการเริ่มต้นทำอะไรใหม่ๆ อุปนิสัยค่อนข้างเปิดใจกับคนรอบข้างและความคิดเห็นผู้อื่น",
+    "41": "เป็นเลขเกี่ยวข้องกับความสำเร็จทุกด้าน แต่ให้ระวังการโดนทุจริตกับคนที่เริ่มรู้จักกันใหม่ๆ",
+    "42": "เป็นที่รักของใครหลายๆ คน การส่งเสริมจากผู้อื่นจนได้ดีจะเกิดโดยที่คุณไม่ได้เรียกร้องแต่อย่างใด",
+    "43": "ความกังวลใจจะเกิดกับคุณไม่มากก็น้อยในการคบหาคนรอบๆ ตัว ทำให้การเข้าใครค่อนข้างยากมาก",
+    "44": "ไหวพริบปฏิภาณค่อนข้างดี ชอบจดจ่ออยู่กับเรื่องเดิมๆ ทานอาหารเดิมๆ เสื้อผ้าแบบเดิมๆ",
+    "45": "สิ่งศักดิ์สิทธิ์ให้ความคุ้มครองมากกว่าใครเพื่อน เสน่ห์ในการเข้าหาคนมีแต่คนยอมรับในสิ่งที่คุณเป็นอยู่",
+    "46": "เหมาะสำหรับการขอพึ่งพาคนอื่นในเรื่องที่เดือดร้อนจริงๆ จะมีคนช่วยเหลือให้ปัญหาหมดไป",
+    "47": "ความพยายามทำอะไรสักอย่างแบบตั้งใจ จะประสบความสำเร็จตามที่ตั้งหวังเอาไว้ก่อนหน้านี้",
+    "48": "เลือกคบคนเสียหน่อย จะมีแต่มิตรสหายที่ไม่ค่อยจริงใจเท่าไรนัก มีน้อยแต่ให้ใจจะดีกว่า",
+    "49": "เจอกับประสบการณ์หลายๆ เรื่องที่ไม่คาดคิดว่าจะเกิดกับคุณ ทั้งที่มีโอกาสเพียงหนึ่งในล้าน",
+    "50": "ประสบความสำเร็จดีกับคนชอบเข้าสังคม การประกอบกิจการต้องใช้ความสามารถอย่างเต็มที่ไม่เช่นนั้นได้แค่ครึ่งๆ",
+    "51": "เงินทองค่อนข้างหามาได้ง่าย หน้าที่การงานจะเด่นชัดกว่าใครเพื่อน ความกตัญญูจากบุตร หลานมีเข้ามาเสมอ",
+    "52": "ความเชื่อนารีอุปถัมภ์ ถ้าเป็นชายจะมีแต่คนคอยส่งเสริมทั้งเรื่องการงาน ความรัก การเงิน",
+    "53": "หลีกหนีการคบหาคนที่ไม่หวังผลประโยชน์ คุณจะเกิดความไว้เนื้อเชื่อใจและหายนะจะเกิดกับคุณเอง",
+    "54": "เกิดความแคล้วคลาดกับทุกปัญหา อุบัติเหตุเกิดขึ้นคุณ จะเจ็บก็เพียงแค่เล็กน้อยพอถากๆ",
+    "55": "ชอบเรื่องการเดินทางไกลเป็นหลัก การปลีกวิเวกถือเป็นของขวัญชิ้นดีกับตัวคุณเองมากกว่าการอยู่ร่วมกันหลายคน",
+    "56": "มีแต่ความสำเร็จในชีวิต ยิ่งถ้ามีคู่ครองอยู่ด้วยแล้ว จะช่วยกันส่งเสริมให้ทุกอย่างในชีวิตดีขึ้นไปอีก",
+    "57": "ความคิดชอบขัดกับตัวเอง ถึงรู้ว่าผิดแต่ก็ยังทำ ทั้งด้วยสถานการณ์รอบตัวและคนบังคับ",
+    "58": "หลงเชื่อในเรื่องของพิธีกรรมเร้นลับ การสืบเสาะกับเรื่องเหล่านี้ถือเป็นอาหารจานโตที่คุณชอบเสพ",
+    "59": "ลางสังหรณ์ทุกเรื่องค่อนข้างตรงจนน่าสงสัยว่ารู้ได้อย่างไร มีความเป็นตัวเองสูงไม่เปลี่ยนเพื่อใครเด็ดขาด",
+    "60": "ประกอบกิจการเกี่ยวกับเรื่องของสวยงามจะดำเนินไปได้ด้วยดี รักจะเกิดได้ง่ายแต่ก็ไปง่ายด้วยเช่นกัน",
+    "61": "การพบเจอสิ่งยั่วยุ กิเลสตัณหาค่อนข้างหลบหลีกใจตัวเองได้ยาก มีแต่หลงในเรื่องเหล่านี้จนชีวิตพังได้",
+    "62": "มีจิตใจเป็นพระ เหมาะกับการให้มากกว่าการได้รับ ใครขอความช่วยเหลือใจดีจนบางครั้งเสียผลประโยชน์ตัวเองไป",
+    "63": "เหมาะกับการประกอบกิจการใหญ่ แต่การทำอะไรก็ตามควรเลือกทำคนเดียวจะดีกว่า ไม่เช่นนั้นโดนโกง",
+    "64": "อาชีพเกี่ยวข้องกับค้าขาย เจรจากับใครก็เป็นผลดีไปเสียหมด อุปนิสัยคุณค่อนข้างเป็นที่ถูกใจกับคนรอบข้าง",
+    "65": "จะได้บุญกุศลเก่าคอยส่งเสริมช่วยเหลือให้มีชีวิตที่มีแต่คนคอยนับหน้าถือตา ช่วยเหลือเมื่อยามตกอับ",
+    "66": "หมดทรัพย์ไปกับการหาความสุขให้ตัวเอง สุรุ่ยสุร่ายจนบางครั้งคิดว่าเดี๋ยวเงินก็หาใหม่ได้",
+    "67": "ความผิดหวังจะเกิดกับการสร้างครอบครัวไม่ได้เป็นอย่างที่คิดเอาไว้ แม้ประคองเท่าไหร่ก็ไม่ไหว",
+    "68": "หลงผิดในทุกเรื่องกับการมัวเมาอยู่ที่คนมาหลอกลวง ภายในคุณค่อนข้างอ่อนแอเมื่อเปรียบเทียบกับการกระทำที่ออกมา",
+    "69": "เทสต์ค่อนข้างดีกับความคิดสร้างสรรค์ในการกระทำหลายๆ เรื่อง อุบัติเหตุมักเกิดจากการเดินทางไกล",
+    "70": "กรรมเก่าติดตามหนักกว่าใครเพื่อน ทั้งเรื่องของการโดนก่ออาชญากรรม ขึ้นศาลเป็นเรื่องเป็นราว",
+    "71": "คิดอยากทำอะไรเพื่อสมหวังในชีวิต จะพบแต่คนคอยขัดขวางไม่ให้ประสบความสำเร็จ",
+    "72": "ดวงชะตาค่อนข้างแข็ง ทำอะไรล้มก็สามารถลุกขึ้นยืนได้อย่างสง่าหรือเด่นมากกว่าเดิมด้วยซ้ำ",
+    "73": "บุญบาปกับการเจอเจ้ากรรมนายเวร จะทำให้ถูกจองล้างจองผลาญกับเรื่องที่ไม่ควรจะเป็นก็เป็นได้",
+    "74": "พลังด้านความกตัญญูหากคุณทำกับพ่อแม่ผู้ปกครองแล้ว จะส่งเสริมให้คุณมีชีวิตดีกว่าใครเพื่อน",
+    "75": "เริ่มต้นชีวิตอาจเหนื่อยหน่อย แต่หากมีความอดทนอดกลั้นกับเรื่องที่เป็นอยู่ก็สามารถสำเร็จได้มากกว่าใคร",
+    "76": "ควรหมั่นทำบุญกุศลส่งเสริมชีวิตตัวเองให้ดี เพราะด้วยพื้นฐานแล้วจะมีแต่แย่ลงมากกว่าดีขึ้น",
+    "77": "ชีวิตค่อนข้างเกิดความเหน็ดเหนื่อย ทำอะไรมีแต่คำว่าปลงเสีย ร่างกายมีความเจ็บป่วยไม่หายขาด",
+    "78": "มีความข้องเกี่ยวกับเรื่องของคดีความเป็นสำคัญ ถึงแม้เป็นขั้นตอนแต่ก็เหนื่อยมากหน่อย",
+    "79": "เรื่องการเงินไม่มีความเดือดร้อน มีคนปูทางมาให้คุณแล้ว งานที่ทำควรเหมาะกับต่างประเทศแล้วจะดี",
+    "80": "อยู่ดีๆ แล้วก็ตามไม่พาลมีแต่คนคอยหาเรื่องมาให้แก้ไขไม่ห่าง การพบเจอใครควรเลือกคบหามีแต่พวกหวังผลประโยชน์",
+    "81": "เกณฑ์การกำพร้าจากครอบครัว เพื่อน คนรักมี เน้นการดูแลตัวเองสุขภาพร่างกายไม่แข็งแรงเท่าที่ควรจะเป็น",
+    "82": "โชคชะตามีแต่อาภัพเรื่องของการมีคู่ หากดันทุรังอยากจะมีก็จะพบแต่คนที่หวังผลจากตัวคุณ",
+    "83": "เหมาะกับคนที่ชอบการท้าทายในหลายๆ เรื่อง เพราะเป็นคนตั้งใจทำและทำออกมาได้ดีทีเดียว",
+    "84": "มักพบเจอแต่กับเรื่องไม่ประสงค์ดี ทั้งการคบหาคน สุขภาพ การเงิน รวมไปถึงการทำงาน",
+    "85": "พ่ายแพ้ใจตัวเองกับคนที่ชอบมาอ้อนขออะไรบางอย่างกับตัวคุณ การพบเจอใครก็ตามมีแต่คนไก่กา",
+    "86": "หลงเชื่อกับคนที่เข้ามาหลอกลวงได้ง่าย มิจฉาชีพเข้ามาถึงคุณ ถ้าไม่ใจแข็งก็ตกเป็นเหยื่อโดยง่าย",
+    "87": "ภาระหน้าที่ความรับผิดชอบมากกว่าใครเพื่อน ทุกอย่างจะตกมาเป็นความรับผิดชอบของคุณเอง",
+    "88": "ความคิดอ่านโลดแล่นกว่าใคร แต่ก็มีคนเด่นกว่า ไม่ควรหยุดพัฒนาตัวเองแล้วจะได้เป็นที่หนึ่ง",
+    "89": "สามารถเข้าในสังคมได้ทุกชนชั้น การออกไปไหนมาไหนมักพบอุปสรรคขวางกั้นไม่มากก็น้อย",
+    "90": "มีเทพคอยคุ้มครองอยู่รอบตัว ทำอะไรมีแต่คนคิดร้ายไม่สำเร็จ การหาทรัพย์สินค่อนข้างยาก",
+    "91": "ใฝ่หาความสำเร็จได้ไม่ยากหากมีความตั้งใจเป็นที่หนึ่ง อย่าไปสนใจคนรอบข้างที่ไม่มีผลต่อชีวิต จะมีแต่เสียเวลา",
+    "92": "เป็นผู้ชอบในเรื่องการอนุรักษ์ของเก่า การเก็บเรื่องราวดีและร้ายเอาไว้ในหัวได้อย่างดีเยี่ยม",
+    "93": "ไม่อยากเด่นดังแต่ก็จะมีคนส่งเสริมให้มีแต่คนรู้จักและชื่นชอบเป็นอย่างมาก การดำเนินชีวิตค่อนข้างง่าย",
+    "94": "ชีวิตก้าวขาเข้าไปครึ่งหนึ่งในเรื่องทางธรรม การได้ส่งเสริมทางพระพุทธศาสนามักเกิดกับคุณ",
+    "95": "สามารถหยั่งรู้เหตุการณ์ล่วงหน้าได้อย่างดีเยี่ยม ความคิดอ่านมักถูกจำกัดไปด้วยความคิดผู้อื่น",
+    "96": "ความเป็นคนใจดีละเว้นไว้ก่อน มีแต่คนประสงค์ร้ายกับคุณ คำพูดจามักเป็นผลให้เกิดเรื่องจริง",
+    "97": "ประสบความสำเร็จในหน้าที่การงานด้วยตนเอง เปลี่ยนสังคมที่อยู่ใหม่มักได้การต้อนรับอย่างดี",
+    "98": "เหมาะสมสำหรับคนที่ชอบรักสันโดษ จะมีความสุขมากและไม่ค่อยมีคนเข้ามายุ่งเกี่ยวกับคุณ",
+    "99": "มีความสามารถในการกระทำอะไรหลายๆ อย่างได้ในคราเดียว การเปิดใจกับเรื่องต่างๆ มักเกิดผลดี",
+    "100": "ประสบความสำเร็จในทุกเรื่อง ไม่ว่าหยิบจับทำอะไรมีแต่คำว่าเฮง ปัง ไปเสียหมด"
+    };
+  const THAI_DIGITS = "๐๑๒๓๔๕๖๗๘๙";
+  const toThai = (n) => String(n).replace(/\d/g, d => THAI_DIGITS[d]);
+  const isPrime = (n) => { if (n < 2) return false; for (let i = 2; i * i <= n; i++) if (n % i === 0) return false; return true; };
+  const factsOf = (n) => {
+    const f = [`เลขไทย ${toThai(n)}`, n % 2 ? "เลขคี่" : "เลขคู่"];
+    if (isPrime(n)) f.push("จำนวนเฉพาะ");
+    return f.join(" · ");
+  };
+
+  // Unbiased integer in [0, n) via rejection sampling
+  function randInt(n) {
+    const buf = new Uint32Array(1);
+    const limit = Math.floor(0x100000000 / n) * n;
+    let x;
+    do { crypto.getRandomValues(buf); x = buf[0]; } while (x >= limit);
+    return x % n;
+  }
+
+  // Copy: clipboard first, then select-and-copy fallback
+  function copyText(text, statusEl) {
+    const done = (ok) => {
+      statusEl.textContent = ok ? "คัดลอกแล้ว" : "คัดลอกอัตโนมัติไม่ได้ ลองเลือกข้อความแล้วคัดลอกเอง";
+      clearTimeout(statusEl._t);
+      statusEl._t = setTimeout(() => { statusEl.textContent = ""; }, ok ? 2000 : 6000);
+    };
+    const fallback = () => {
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.setAttribute("readonly", "");
+      ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta);
+      done(ok);
+    };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => done(true), fallback);
+      else fallback();
+    } catch (e) { fallback(); }
+  }
+
+  /* ---------- Tabs (hash routed: #phone, #draw) ---------- */
+  const TABS = { phone: $("tab-phone"), draw: $("tab-draw") };
+  let current = "phone";
+  function setTab(name) {
+    if (!TABS[name]) name = "phone";
+    current = name;
+    for (const [key, btn] of Object.entries(TABS)) {
+      const on = key === name;
+      btn.setAttribute("aria-selected", on);
+      btn.tabIndex = on ? 0 : -1;
+      $(key).hidden = !on;
+    }
+  }
+  for (const [key, btn] of Object.entries(TABS)) {
+    btn.addEventListener("click", () => {
+      if (location.hash !== "#" + key) location.hash = key; else setTab(key);
+    });
+    btn.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        const next = key === "phone" ? "draw" : "phone";
+        location.hash = next; TABS[next].focus();
+      }
+    });
+  }
+  window.addEventListener("hashchange", () => setTab(location.hash.slice(1)));
+
+  /* ---------- Phone reading ---------- */
+  const phoneInput = $("phone-input");
+  const EXAMPLE = phoneInput.value;
+  let phoneResult = null;
+  function readPhone() {
+    $("phone-example").hidden = phoneInput.value !== EXAMPLE;
+    const digits = phoneInput.value.replace(/\D/g, "");
+    const msg = $("phone-msg"), sumEl = $("phone-sum"), card = $("phone-meaning");
+    phoneResult = null;
+    msg.hidden = true;
+    if (!digits.length) {
+      sumEl.textContent = "";
+      card.hidden = true;
+      msg.textContent = "พิมพ์ตัวเลขอย่างน้อย 1 หลักเพื่อดูผลรวม";
+      msg.hidden = false;
+      return;
+    }
+    const sum = [...digits].reduce((a, d) => a + Number(d), 0);
+    sumEl.innerHTML = "";
+    const expr = document.createElement("span");
+    expr.className = "sum-expr";
+    expr.textContent = [...digits].join("+");
+    const total = document.createElement("span");
+    total.className = "sum-total";
+    total.textContent = " = " + sum;
+    sumEl.append(expr, total);
+    const notes = [];
+    if (digits.length !== 9 && digits.length !== 10) notes.push(`เบอร์ที่พิมพ์มี ${digits.length} หลัก (เบอร์โทรไทยปกติมี 9–10 หลัก) ระบบรวมตามตัวเลขที่พิมพ์`);
+    if (NUMEROLOGY[sum]) {
+      $("phone-n").textContent = sum;
+      $("phone-facts").textContent = factsOf(sum);
+      $("phone-text").textContent = NUMEROLOGY[sum];
+      card.hidden = false;
+      phoneResult = sum;
+    } else {
+      card.hidden = true;
+      notes.push(sum === 0 ? "ผลรวมเป็น 0 ตำรามีความหมายเฉพาะผลรวม 1–100" : `ผลรวม ${sum} เกิน 100 ตำรามีความหมายเฉพาะผลรวม 1–100`);
+    }
+    if (notes.length) { msg.textContent = notes.join(" · "); msg.hidden = false; }
+  }
+  phoneInput.addEventListener("input", readPhone);
+  $("phone-form").addEventListener("submit", (e) => { e.preventDefault(); readPhone(); });
+  $("phone-copy").addEventListener("click", () => {
+    if (phoneResult == null) return;
+    copyText(`เบอร์ ${phoneInput.value.trim()} ผลรวม ${phoneResult} (เลขศาสตร์ไทย): ${NUMEROLOGY[phoneResult]}`, $("phone-copy-status"));
+  });
+
+  /* ---------- Draw ---------- */
+  const numEl = $("number"), drawBtn = $("draw-btn"), noRepeat = $("no-repeat"),
+        board = $("board"), histEl = $("history"), stageLabel = $("stage-label");
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const LIMIT = 999999;
+  const minEl = $("range-min"), maxEl = $("range-max"), rangeMsg = $("range-msg");
+  let lo = 1, hi = 100, rangeOk = true;
+  let history = [];
+  try {
+    const saved = JSON.parse(localStorage.getItem("rng100") || "null");
+    if (saved && Array.isArray(saved.history)) {
+      history = saved.history.filter(n => Number.isInteger(n) && n >= 0 && n <= LIMIT).slice(0, 500);
+      noRepeat.checked = !!saved.noRepeat;
+      if (Number.isInteger(saved.lo) && Number.isInteger(saved.hi)) { minEl.value = saved.lo; maxEl.value = saved.hi; }
+    }
+  } catch (e) {}
+  const save = () => { try { localStorage.setItem("rng100", JSON.stringify({ history, noRepeat: noRepeat.checked, lo, hi })); } catch (e) {} };
+
+  function readRange() {
+    const a = minEl.value.trim(), b = maxEl.value.trim();
+    const na = Number(a), nb = Number(b);
+    let err = "";
+    const badA = a === "" || !Number.isInteger(na) || na < 0 || na > LIMIT;
+    const badB = b === "" || !Number.isInteger(nb) || nb < 0 || nb > LIMIT;
+    if (badA || badB) err = `ใส่จำนวนเต็มตั้งแต่ 0 ถึง ${LIMIT.toLocaleString("th-TH")}`;
+    else if (na > nb) err = "เลขเริ่มต้นต้องไม่มากกว่าเลขสุดท้าย";
+    minEl.setAttribute("aria-invalid", badA || (!badB && na > nb));
+    maxEl.setAttribute("aria-invalid", badB || (!badA && na > nb));
+    rangeOk = !err;
+    if (rangeOk) {
+      lo = na; hi = nb;
+      const outside = hi > 100 || lo < 1;
+      rangeMsg.textContent = outside ? "ความหมายเลขศาสตร์มีเฉพาะเลข 1–100 เลขนอกช่วงนี้จะแสดงแค่ตัวเลข" : "";
+      rangeMsg.hidden = !outside;
+    } else {
+      rangeMsg.textContent = err; rangeMsg.hidden = false;
+    }
+  }
+  const inRange = (n) => n >= lo && n <= hi;
+
+  let viewing = null;
+  function showMeaning(n, fromBoard) {
+    viewing = n;
+    $("draw-n").textContent = n;
+    $("draw-n").classList.toggle("long", String(n).length > 3);
+    $("draw-label").textContent = (fromBoard ? "เลขที่เลือกดู" : "เลขที่สุ่มได้") + " · เลขศาสตร์ไทย";
+    $("draw-facts").textContent = factsOf(n);
+    const has = !!NUMEROLOGY[n];
+    $("draw-text").textContent = has ? NUMEROLOGY[n] : "ตำรามีความหมายเฉพาะเลข 1–100 เลขนี้จึงไม่มีความหมายเลขศาสตร์";
+    $("draw-text").classList.toggle("meaning-empty", !has);
+    $("draw-head").hidden = false; $("draw-text").hidden = false; $("draw-actions").hidden = !has;
+    $("draw-empty").hidden = true;
+    cells.forEach((c, i) => c.classList.toggle("viewing", i + MIN === n));
+  }
+  $("draw-copy").addEventListener("click", () => {
+    if (viewing == null || !NUMEROLOGY[viewing]) return;
+    copyText(`เลข ${viewing} (เลขศาสตร์ไทย): ${NUMEROLOGY[viewing]}`, $("draw-copy-status"));
+  });
+
+  const cells = [];
+  for (let i = MIN; i <= MAX; i++) {
+    const c = document.createElement("button");
+    c.type = "button";
+    c.className = "cell";
+    c.textContent = i;
+    c.setAttribute("aria-label", `ดูความหมายของเลข ${i}`);
+    c.addEventListener("click", () => {
+      showMeaning(i, true);
+      $("draw-meaning").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+    });
+    board.appendChild(c);
+    cells.push(c);
+  }
+
+  function render() {
+    const drawn = new Set(history);
+    cells.forEach((c, i) => {
+      const n = i + MIN;
+      c.classList.toggle("drawn", drawn.has(n));
+      c.classList.toggle("latest", history[0] === n);
+    });
+    $("board-meta").textContent = `ออกแล้ว ${drawn.size} / ${SPAN}`;
+    $("hist-meta").textContent = `${history.length} ครั้ง`;
+    histEl.innerHTML = "";
+    if (!history.length) histEl.innerHTML = '<span class="note">ยังไม่มีการสุ่ม</span>';
+    else history.slice(0, 60).forEach(n => {
+      const s = document.createElement("span"); s.className = "chip"; s.textContent = n; histEl.appendChild(s);
+    });
+    let drawnInRange = 0;
+    if (rangeOk) drawn.forEach(n => { if (inRange(n)) drawnInRange++; });
+    const size = rangeOk ? hi - lo + 1 : 0;
+    const exhausted = rangeOk && noRepeat.checked && drawnInRange >= size;
+    drawBtn.disabled = !rangeOk || exhausted;
+    stageLabel.textContent = !rangeOk ? "ตั้งช่วงตัวเลขให้ถูกต้องก่อนสุ่ม"
+      : exhausted ? `ออกครบทั้ง ${size.toLocaleString("th-TH")} เลขในช่วงนี้แล้ว กด “เริ่มใหม่”`
+      : history.length ? "เลขที่สุ่มได้" : `พร้อมสุ่มเลข ${lo}–${hi}`;
+    numEl.textContent = history.length ? history[0] : "?";
+    numEl.classList.toggle("long", String(numEl.textContent).length > 3);
+  }
+
+  function pick() {
+    const size = hi - lo + 1;
+    if (noRepeat.checked) {
+      const drawn = new Set(history.filter(inRange));
+      if (drawn.size >= size) return null;
+      if (drawn.size < size / 2) {          // mostly free: retry until an unused number comes up
+        let n;
+        do { n = lo + randInt(size); } while (drawn.has(n));
+        return n;
+      }
+      const pool = [];                       // mostly used: pick from what is left
+      for (let i = lo; i <= hi; i++) if (!drawn.has(i)) pool.push(i);
+      return pool[randInt(pool.length)];
+    }
+    return lo + randInt(size);
+  }
+
+  let busy = false;
+  function draw() {
+    if (busy || drawBtn.disabled || !rangeOk) return;
+    const result = pick();
+    if (result === null) return render();
+    const finish = () => {
+      history.unshift(result);
+      numEl.classList.remove("rolling", "pop");
+      void numEl.offsetWidth;
+      numEl.classList.add("pop");
+      save(); render(); showMeaning(result, false);
+      busy = false;
+    };
+    if (reduceMotion) return finish();
+    busy = true;
+    numEl.classList.add("rolling");
+    let ticks = 0;
+    const iv = setInterval(() => {
+      numEl.textContent = lo + randInt(hi - lo + 1);
+      numEl.classList.toggle("long", String(numEl.textContent).length > 3);
+      if (++ticks >= 12) { clearInterval(iv); finish(); }
+    }, 45);
+  }
+
+  drawBtn.addEventListener("click", draw);
+  $("reset-btn").addEventListener("click", () => { history = []; save(); render(); });
+  noRepeat.addEventListener("change", () => { save(); render(); });
+  [minEl, maxEl].forEach(el => el.addEventListener("input", () => { readRange(); if (rangeOk) save(); render(); }));
+  document.addEventListener("keydown", (e) => {
+    if (current !== "draw") return;
+    const t = e.target;
+    if ((e.key === " " || e.key === "Enter") && !(t instanceof HTMLButtonElement) && !(t instanceof HTMLInputElement) && !(t instanceof HTMLElement && t.closest("summary"))) {
+      e.preventDefault(); draw();
+    }
+  });
+
+  /* ---------- Day / night toggle ---------- */
+  const root = document.documentElement, darkMQ = window.matchMedia("(prefers-color-scheme: dark)");
+  const isDark = () => root.getAttribute("data-theme") === "dark" || (root.getAttribute("data-theme") !== "light" && darkMQ.matches);
+  function syncThemeBtn() {
+    const dark = isDark();
+    $("icon-moon").toggleAttribute("hidden", dark);   // SVG elements have no .hidden property
+    $("icon-sun").toggleAttribute("hidden", !dark);
+    $("theme-text").textContent = dark ? "กลางวัน" : "กลางคืน";
+    $("theme-btn").setAttribute("aria-label", dark ? "เปลี่ยนเป็นโหมดกลางวัน" : "เปลี่ยนเป็นโหมดกลางคืน");
+  }
+  $("theme-btn").addEventListener("click", () => {
+    const next = isDark() ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("theme", next); } catch (e) {}
+    syncThemeBtn();
+  });
+  darkMQ.addEventListener?.("change", syncThemeBtn);
+  new MutationObserver(syncThemeBtn).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+  syncThemeBtn();
+
+  setTab(location.hash.slice(1));
+  readPhone();
+  readRange();
+  render();
+  if (history.length) showMeaning(history[0], false);
+})();
+</script>
+</body>
+</html>
